@@ -119,6 +119,7 @@
             border: 1px solid var(--glass-border); border-radius: 24px;
             box-shadow: 0 20px 60px var(--shadow-color);
             transform-style: preserve-3d; text-align: center;
+            position: relative;
         }
         .card::before {
             content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
@@ -137,7 +138,7 @@
         }
 
         .input-group {
-            position: relative; margin-bottom: 30px;
+            position: relative; margin-bottom: 20px;
             transform: translateZ(20px); text-align: left;
         }
         .input-group label {
@@ -163,6 +164,7 @@
             font-size: 1.1rem;
             z-index: 20;
             transition: color 0.3s;
+            cursor: pointer;
         }
         .password-toggle-icon:hover {
             color: var(--primary);
@@ -185,6 +187,19 @@
         .btn-launch:hover::before { transform: scaleX(1); transform-origin: left; }
         .btn-launch:hover { box-shadow: 0 0 30px var(--primary); }
 
+        .error {
+            color: #ff6b6b; margin-top: 10px; font-size: 0.9rem;
+        }
+
+        /* Dashboard sample styles */
+        .dashboard {
+            text-align: left;
+        }
+        .dashboard h3 { font-size: 1.1rem; margin-bottom: 8px; }
+        .card .logout-btn {
+            margin-top: 20px; padding: 10px 14px; border-radius: 8px; border: none;
+            background: rgba(255,255,255,0.08); color: var(--text-main); cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -206,60 +221,138 @@
             <h2>Command Entry</h2>
             <p class="subtitle">Secure Terminal Access</p>
             
-            <form id="loginForm">
+            <form id="loginForm" autocomplete="on" novalidate>
                 <div class="input-group">
-                    <label>Username</label>
-                    <input type="text" id="username" required autocomplete="off" value="poornima karunakaran">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required autocomplete="username" placeholder="Enter your username">
                 </div>
                 
-                <div class="input-group">
-                    <label>Passkey</label>
-                    <input type="password" id="password" required value="admin@space" placeholder="••••••••">
-                    <i class="fas fa-eye password-toggle-icon hover-trigger" id="togglePassword"></i>
+                <div class="input-group" style="position:relative;">
+                    <label for="password">Passkey</label>
+                    <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="••••••••">
+                    <i class="fas fa-eye password-toggle-icon hover-trigger" id="togglePassword" aria-hidden="true" title="Toggle password visibility"></i>
                 </div>
 
                 <button type="submit" class="btn-launch">Initiate Launch</button>
+                <div id="loginError" class="error" style="display:none;"></div>
             </form>
         </div>
     </div>
 
     <script>
-        // --- 1. PASSWORD TOGGLE LOGIC ---
-        const togglePassword = document.querySelector('#togglePassword');
-        const passwordInput = document.querySelector('#password');
-        const usernameInput = document.querySelector('#username');
-        const loginForm = document.querySelector('#loginForm');
+        // WARNING: This client-side static auth is insecure for production.
+        // The following valid credentials are checked on the client as requested.
+        // They are visible to anyone who views the page source.
+        const VALID_USER = 'poornima_karunakaran';
+        const VALID_PASS = 'admin@space-2026';
+
         const card = document.getElementById('card');
+        const loginForm = document.getElementById('loginForm');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const togglePassword = document.getElementById('togglePassword');
+        const loginError = document.getElementById('loginError');
 
-        togglePassword.addEventListener('click', function (e) {
-            // toggle the type attribute
-            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            passwordInput.setAttribute('type', type);
-            
-            // toggle the eye slash icon
-            this.classList.toggle('fa-eye-slash');
-        });
+        // Keep original HTML for restoring on logout
+        const originalCardHTML = card.innerHTML;
 
-        // --- Login validation for the provided credentials ---
-        loginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const user = usernameInput.value.trim();
-            const pass = passwordInput.value;
+        function showError(msg) {
+            loginError.textContent = msg;
+            loginError.style.display = 'block';
+        }
+        function clearError() {
+            loginError.textContent = '';
+            loginError.style.display = 'none';
+        }
 
-            // The credentials requested to be present in the page
-            const validUser = 'poornima karunakaran';
-            const validPass = 'admin@space';
+        function bindLoginHandlers() {
+            // Password visibility
+            togglePassword?.addEventListener('click', () => {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                togglePassword.classList.toggle('fa-eye-slash');
+            });
 
-            if (user === validUser && pass === validPass) {
-                // Success: replace card content with a welcome message
-                card.innerHTML = `\n                    <h2>Welcome, ${user}</h2>\n                    <p class="subtitle">Access Granted</p>\n                `;
+            // Form submit: static check
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                clearError();
+                const user = usernameInput.value.trim();
+                const pass = passwordInput.value;
+
+                if (user === VALID_USER && pass === VALID_PASS) {
+                    // Show dashboard
+                    renderDashboard(user);
+                } else {
+                    showError('Incorrect username or password');
+                }
+            });
+        }
+
+        function renderDashboard(user) {
+            card.innerHTML = `
+                <h2>Dashboard</h2>
+                <p class="subtitle">Welcome to your control panel</p>
+                <div class="dashboard">
+                    <h3>Hello, ${escapeHtml(user)}</h3>
+                    <p style="color:var(--text-muted)">Last login: just now</p>
+                    <hr style="margin:12px 0; opacity:0.06">
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <div style="flex:1; min-width:120px; padding:12px; background:rgba(255,255,255,0.02); border-radius:8px;">
+                            <strong>Nodes</strong><div style="font-size:1.2rem; margin-top:6px">12</div>
+                        </div>
+                        <div style="flex:1; min-width:120px; padding:12px; background:rgba(255,255,255,0.02); border-radius:8px;">
+                            <strong>Active</strong><div style="font-size:1.2rem; margin-top:6px">7</div>
+                        </div>
+                    </div>
+                    <button class="logout-btn" id="logoutBtn">Log out</button>
+                </div>
+            `;
+
+            const logoutBtn = document.getElementById('logoutBtn');
+            logoutBtn?.addEventListener('click', () => {
+                // restore original login card
+                card.innerHTML = originalCardHTML;
+                // re-bind variables and handlers (re-select DOM elements)
+                rebindAfterRestore();
+            });
+        }
+
+        function rebindAfterRestore() {
+            // Update references to inputs & elements after innerHTML replacement
+            const newLoginForm = card.querySelector('#loginForm');
+            const newUsername = card.querySelector('#username');
+            const newPassword = card.querySelector('#password');
+            const newToggle = card.querySelector('#togglePassword');
+            const newError = card.querySelector('#loginError');
+
+            // update globals used by bindLoginHandlers
+            if (newLoginForm && newUsername && newPassword) {
+                // reassign DOM references
+                window.loginForm = newLoginForm;
+                window.usernameInput = newUsername;
+                window.passwordInput = newPassword;
+                window.togglePassword = newToggle;
+                window.loginError = newError;
+                // bind handlers again
+                bindLoginHandlers();
             } else {
-                // Simple feedback for wrong credentials
-                alert('Invalid username or password');
+                // if this fails, reload page to be safe
+                location.reload();
             }
-        });
+        }
 
-        // --- 2. CURSOR & THEME LOGIC (From previous) ---
+        // simple escape for injecting username into HTML
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, function (m) {
+                return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]);
+            });
+        }
+
+        // initial bind
+        bindLoginHandlers();
+
+        // --- 2. CURSOR & THEME LOGIC ---
         const cursor = document.querySelector('.cursor');
         document.addEventListener('mousemove', (e) => {
             cursor.style.left = e.clientX + 'px';
