@@ -206,15 +206,15 @@
             <h2>Command Entry</h2>
             <p class="subtitle">Secure Terminal Access</p>
             
-            <form>
+            <form id="loginForm">
                 <div class="input-group">
-                    <label>Commander ID</label>
-                    <input type="text" required autocomplete="off" placeholder="USR-2025-X">
+                    <label>Username</label>
+                    <input type="text" id="username" required autocomplete="off" value="poornima karunakaran">
                 </div>
                 
                 <div class="input-group">
                     <label>Passkey</label>
-                    <input type="password" id="password" required placeholder="••••••••">
+                    <input type="password" id="password" required value="admin@space" placeholder="••••••••">
                     <i class="fas fa-eye password-toggle-icon hover-trigger" id="togglePassword"></i>
                 </div>
 
@@ -227,6 +227,9 @@
         // --- 1. PASSWORD TOGGLE LOGIC ---
         const togglePassword = document.querySelector('#togglePassword');
         const passwordInput = document.querySelector('#password');
+        const usernameInput = document.querySelector('#username');
+        const loginForm = document.querySelector('#loginForm');
+        const card = document.getElementById('card');
 
         togglePassword.addEventListener('click', function (e) {
             // toggle the type attribute
@@ -235,6 +238,25 @@
             
             // toggle the eye slash icon
             this.classList.toggle('fa-eye-slash');
+        });
+
+        // --- Login validation for the provided credentials ---
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const user = usernameInput.value.trim();
+            const pass = passwordInput.value;
+
+            // The credentials requested to be present in the page
+            const validUser = 'poornima karunakaran';
+            const validPass = 'admin@space';
+
+            if (user === validUser && pass === validPass) {
+                // Success: replace card content with a welcome message
+                card.innerHTML = `\n                    <h2>Welcome, ${user}</h2>\n                    <p class="subtitle">Access Granted</p>\n                `;
+            } else {
+                // Simple feedback for wrong credentials
+                alert('Invalid username or password');
+            }
         });
 
         // --- 2. CURSOR & THEME LOGIC (From previous) ---
@@ -267,7 +289,6 @@
 
         // --- 3. 3D TILT ---
         const scene = document.getElementById('scene');
-        const card = document.getElementById('card');
         scene.addEventListener('mousemove', (e) => {
             const xAxis = (window.innerWidth / 2 - e.pageX) / 25;
             const yAxis = (window.innerHeight / 2 - e.pageY) / 25;
